@@ -126,11 +126,19 @@ function checkVisaRequirements() {
     
     // 2. Case-SENSITIVE regex for acronyms to prevent matching "opt-in" or "opt out"
     const strictRegex = /\b(OPT|CPT)\b/;
+
+    // 3. IGNORE Regex for EEO Legal Boilerplate
+    const ignoreRegex = /\b(equal employment|equal opportunity|regardless of|protected class|national origin|sexual orientation|marital status|veteran status|race, color)\b/i;
     
     let foundSentences = [];
     
     for (let sentence of sentences) {
         const cleanSentence = sentence.trim().replace(/\s+/g, ' '); // Clean up double spaces
+        
+        // If the sentence looks like an Equal Opportunity statement, skip it immediately!
+        if (ignoreRegex.test(cleanSentence)) {
+            continue; 
+        }
         
         // Ignore tiny fragments and check our smart regex patterns
         if (cleanSentence.length > 15 && (generalRegex.test(cleanSentence) || strictRegex.test(cleanSentence))) {
