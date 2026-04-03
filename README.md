@@ -4,7 +4,7 @@ A lightweight, vanilla JavaScript Chrome Extension built for job seekers. It aut
 
 Stop applying to "ghost jobs" that have been sitting untouched for 6 months, and stop wasting time on applications that don't support your visa requirements.
 
-![UI Preview showing the widget floating on a job board](path/to/ui-preview.png)
+![UI Preview showing the widget floating on a job board](dates_published.png)
 
 ## ✨ Features
 
@@ -22,10 +22,10 @@ Stop applying to "ghost jobs" that have been sitting untouched for 6 months, and
 ## 📸 Screenshots
 
 ### Uncover Hidden Timelines
-![Screenshot showing the published and updated dates](path/to/feature-dates.png)
+![Screenshot showing the published and updated dates](dates_published.png)
 
 ### Auto-Scan for Sponsorship & Clearance
-![Screenshot showing the yellow Visa warning box](path/to/feature-visa-scanner.png)
+![Screenshot showing the yellow Visa warning box](visa_with_dates.png)
 
 ## 🚀 How to Install (Developer Mode)
 
