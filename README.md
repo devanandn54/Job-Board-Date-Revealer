@@ -1,6 +1,6 @@
 # 🕵️‍♂️ ATS Insight: Job Board Date Revealer
 
-A lightweight, vanilla JavaScript Chrome Extension built for job seekers. It automatically scrapes hidden metadata from popular ATS platforms (Greenhouse, Ashby, Lever) to reveal exactly when a job was published, when it was last updated, and scans the description for hidden Visa or Clearance requirements.
+A lightweight, vanilla JavaScript Chrome Extension built for job seekers. It automatically scrapes hidden metadata from popular ATS platforms (Greenhouse, Ashby, Lever) to reveal exactly when a job was published, when it was last updated, scans the description for hidden Visa or Clearance requirements, and provides a 1-click E-Verify status check.
 
 Stop applying to "ghost jobs" that have been sitting untouched for 6 months, and stop wasting time on applications that don't support your visa requirements.
 
@@ -8,9 +8,12 @@ Stop applying to "ghost jobs" that have been sitting untouched for 6 months, and
 
 ## ✨ Features
 
-* **🕰️ Hidden Date Extraction:** Bypasses frontend UI to pull the actual `datePosted` and `updatedAt` timestamps directly from hidden JSON-LD scripts and API endpoints.
+* **🕰️ Hidden Date Extraction:** Bypasses frontend UI to pull the actual `datePosted` and `updatedAt` timestamps directly from hidden JSON-LD scripts, Next.js state data, and API endpoints.
 * **🚦 Smart Age Badges:** Automatically calculates how many days ago the job was posted and color-codes it (🟢 Fresh, 🟡 Warm, 🔴 Stale).
-* **⚠️ Intelligent Visa/Clearance Scanner:** Uses RegEx to scan the job description for strict keywords (Sponsorship, H1B, OPT, Clearance, Citizen) and extracts the exact context sentence into a warning box.
+* **⚠️ Intelligent Visa/Clearance Scanner:** Uses RegEx with word boundaries to scan the job description for strict keywords (Sponsorship, H1B, OPT, Clearance, Citizen) and extracts the exact context sentence into a warning box.
+  * **Smart Filtering:** Automatically ignores Equal Employment Opportunity (EEO) legal boilerplate to prevent false positives.
+  * **DOM-Cloning Tech:** Creates an invisible clone of the page and prunes `<form>` elements before scanning. This ensures the extension only reads the actual job description and completely ignores standard application dropdown questions.
+* **🏢 1-Click E-Verify Check:** Automatically extracts the hiring company's name and generates a direct search link to the official USCIS E-Verify database, allowing you to verify employer participation instantly.
 * **🥷 Seamless UI:** Built with a dark-mode, glassmorphism design that floats cleanly over the page without causing CSS bleed.
 
 ## 🛠️ Supported Platforms
@@ -35,7 +38,7 @@ Since this is open-source and not currently on the Chrome Web Store, you can ins
 2. Open Google Chrome and navigate to `chrome://extensions/`.
 3. Toggle on **Developer mode** in the top right corner.
 4. Click **Load unpacked** in the top left corner.
-5. Select the folder containing this extension (`ATS-Insight-Extension`).
+5. Select the folder containing this extension (`ATS-Insight-Extension` or your specific folder name).
 6. Navigate to any supported job board and watch the widget appear in the bottom right!
 
 ## 🤝 Contributing

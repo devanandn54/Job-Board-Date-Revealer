@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Job Board Date Revealer",
-  "version": "1.2",
-  "description": "Fetches hidden dates and scans for Visa/Clearance requirements on Greenhouse, Ashby, and Lever.",
+  "name": "ATS Insight: Job Board Revealer",
+  "version": "1.3",
+  "description": "Fetches hidden dates, scans for Visa/Clearance requirements, and provides E-Verify links for Greenhouse, Ashby, and Lever.",
   "content_scripts": [
     {
       "matches": [

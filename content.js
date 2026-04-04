@@ -4,12 +4,17 @@ const hostname = window.location.hostname;
 // 1. DATA FETCHING ROUTER
 // ==========================================
 
+let companyName = "the company"; // Fallback name
+
 // --- LEVER LOGIC ---
 if (hostname.includes('lever.co')) {
     setTimeout(() => {
         let datePosted = null;
         
-        // Try to find the date in the JSON-LD script first
+        // Try to grab company name for E-Verify link
+        const companyMeta = document.querySelector('meta[property="og:site_name"]');
+        if (companyMeta) companyName = companyMeta.content.split("'")[0];
+
         const ldScripts = document.querySelectorAll('script[type="application/ld+json"]');
         for (let script of ldScripts) {
             try {
@@ -21,19 +26,18 @@ if (hostname.includes('lever.co')) {
             } catch (e) {}
         }
 
-        // Fallback: Regex scan all scripts for Lever's specific data structure
         if (!datePosted) {
             const allScripts = document.querySelectorAll('script');
             for (let script of allScripts) {
                 const match = script.innerText.match(/"datePosted"\s*:\s*"(\d{4}-\d{2}-\d{2}[^"]*)"/);
                 if (match && match[1]) {
-                    datePosted = match[1].split('T')[0]; // Clean the string
+                    datePosted = match[1].split('T')[0];
                     break;
                 }
             }
         }
 
-        injectWidget(datePosted, null);
+        injectWidget(datePosted, null, companyName);
     }, 1000);
 }
 
@@ -47,8 +51,11 @@ else if (hostname.includes('ashbyhq.com')) {
         for (let script of ldScripts) {
             try {
                 const data = JSON.parse(script.innerText);
-                if (data['@type'] === 'JobPosting' && data.datePosted) {
-                    datePosted = data.datePosted;
+                if (data['@type'] === 'JobPosting') {
+                    if (data.datePosted) datePosted = data.datePosted;
+                    if (data.hiringOrganization && data.hiringOrganization.name) {
+                        companyName = data.hiringOrganization.name;
+                    }
                     break;
                 }
             } catch (e) {}
@@ -63,7 +70,7 @@ else if (hostname.includes('ashbyhq.com')) {
             }
         }
 
-        if (datePosted || updatedAt) injectWidget(datePosted, updatedAt);
+        if (datePosted || updatedAt) injectWidget(datePosted, updatedAt, companyName);
     }, 1000); 
 }
 
@@ -74,6 +81,8 @@ else if (hostname.includes('greenhouse.io')) {
 
     if (jobsIndex > 0 && jobsIndex + 1 < urlParts.length) {
         const boardToken = urlParts[jobsIndex - 1];
+        companyName = boardToken.replace(/-/g, ' '); // Basic formatting for E-Verify
+        
         const jobId = urlParts[jobsIndex + 1].split('?')[0];
         const apiUrl = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/jobs/${jobId}`;
 
@@ -81,7 +90,7 @@ else if (hostname.includes('greenhouse.io')) {
             .then(response => response.json())
             .then(data => {
                 if (data.first_published || data.updated_at) {
-                    injectWidget(data.first_published, data.updated_at);
+                    injectWidget(data.first_published, data.updated_at, companyName);
                 }
             })
             .catch(err => console.error("Ext Error:", err));
@@ -114,39 +123,55 @@ function getBadgeClass(dateStr) {
     return "badge-stale";                     
 }
 
-// Intelligent Visa and Clearance Scanner
+// Targeted Visa Scanner (DOM Cloning Method)
 function checkVisaRequirements() {
-    const bodyText = document.body.innerText;
-    
-    // Split by punctuation OR newlines so bullet points don't bleed into each other
-    const sentences = bodyText.split(/(?<=[.?!])\s+|\n+/);
-    
-    // 1. Case-INSENSITIVE regex with Word Boundaries (\b) for general terms
-    const generalRegex = /\b(sponsorship|visa|h1b|h-1b|clearance|citizen|citizenship|green card)\b/i;
-    
-    // 2. Case-SENSITIVE regex for acronyms to prevent matching "opt-in" or "opt out"
-    const strictRegex = /\b(OPT|CPT)\b/;
+    // 1. Create an invisible clone of the entire page body
+    const bodyClone = document.body.cloneNode(true);
 
-    // 3. IGNORE Regex for EEO Legal Boilerplate
-    const ignoreRegex = /\b(equal employment|equal opportunity|regardless of|protected class|national origin|sexual orientation|marital status|veteran status|race, color)\b/i;
+    // 2. Identify all application form containers across different ATS platforms
+    const formSelectorsToRemove = [
+        'form',                 // Nuke all HTML forms (this catches 99% of application questions)
+        '#application',         // Greenhouse specific form wrapper
+        '#application_form',    // Greenhouse specific form wrapper
+        '.application-form',    // General class
+        '.postings-form',       // Lever specific
+        '.ashby-application-form' // Ashby specific
+    ];
+
+    // 3. Remove these forms from our invisible clone so the scanner can't read them
+    formSelectorsToRemove.forEach(selector => {
+        const elements = bodyClone.querySelectorAll(selector);
+        elements.forEach(el => el.remove());
+    });
+
+    // 4. Now extract the text from the cleaned-up clone
+    const targetText = bodyClone.innerText;
+    
+    // Split by punctuation OR newlines
+    const sentences = targetText.split(/(?<=[.?!])\s+|\n+/);
+    
+    const generalRegex = /\b(sponsorship|visa|h1b|h-1b|clearance|citizen|citizenship|green card)\b/i;
+    const strictRegex = /\b(OPT|CPT)\b/;
+    
+    // Expanded ignore list to include EEO boilerplate AND common application questions
+    const ignoreRegex = /\b(equal employment|equal opportunity|regardless of|protected class|national origin|sexual orientation|marital status|veteran status|race, color|reporting purposes|self-identification|voluntary|will you now or in the future|legally authorized to work)\b/i;
     
     let foundSentences = [];
     
     for (let sentence of sentences) {
-        const cleanSentence = sentence.trim().replace(/\s+/g, ' '); // Clean up double spaces
+        const cleanSentence = sentence.trim().replace(/\s+/g, ' '); 
         
-        // If the sentence looks like an Equal Opportunity statement, skip it immediately!
+        // Skip ignored legal/form boilerplate
         if (ignoreRegex.test(cleanSentence)) {
             continue; 
         }
         
-        // Ignore tiny fragments and check our smart regex patterns
+        // Check for matches
         if (cleanSentence.length > 15 && (generalRegex.test(cleanSentence) || strictRegex.test(cleanSentence))) {
             foundSentences.push(cleanSentence);
         }
     }
     
-    // Return unique sentences only to prevent duplicates
     return [...new Set(foundSentences)];
 }
 
@@ -154,7 +179,7 @@ function checkVisaRequirements() {
 // 3. WIDGET UI GENERATION
 // ==========================================
 
-function injectWidget(publishedStr, updatedStr) {
+function injectWidget(publishedStr, updatedStr, companyNameStr) {
     if (document.getElementById('job-insight-widget')) return;
 
     const formatDate = (dateStr) => {
@@ -205,7 +230,7 @@ function injectWidget(publishedStr, updatedStr) {
         `;
     }
 
-    // Inject Visa/Clearance warnings if found
+    // Visa Scanner Output
     if (visaMentions.length > 0) {
         html += `<div class="gh-divider"></div>`;
         html += `
@@ -214,7 +239,6 @@ function injectWidget(publishedStr, updatedStr) {
                 <ul class="gh-warning-list">
         `;
         
-        // Show up to 2 sentences to keep the widget from getting too tall
         visaMentions.slice(0, 2).forEach(sentence => {
             const truncated = sentence.length > 110 ? sentence.substring(0, 110) + '...' : sentence;
             html += `<li>"${truncated}"</li>`;
@@ -222,6 +246,20 @@ function injectWidget(publishedStr, updatedStr) {
         
         html += `</ul></div>`;
     }
+
+    // NEW: E-Verify Action Row
+    // Generate a URL that searches the USCIS E-Verify database for the company
+    const everifyUrl = `https://www.e-verify.gov/about-e-verify/e-verify-data/how-to-find-participating-employers?search_api_fulltext=${encodeURIComponent(companyNameStr)}`;
+    
+    html += `<div class="gh-divider"></div>`;
+    html += `
+        <div class="gh-row" style="justify-content: center; margin-top: 8px;">
+            <a href="${everifyUrl}" target="_blank" style="color: #60a5fa !important; font-size: 12px !important; text-decoration: none !important; font-weight: 600 !important; display: flex; align-items: center; gap: 4px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                Check E-Verify Status
+            </a>
+        </div>
+    `;
 
     html += `</div>`;
     widget.innerHTML = html;
