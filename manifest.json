@@ -1,15 +1,21 @@
 {
   "manifest_version": 3,
   "name": "ATS Insight: Job Board Revealer",
-  "version": "1.3",
-  "description": "Fetches hidden dates, scans for Visa/Clearance requirements, and provides E-Verify links for Greenhouse, Ashby, and Lever.",
+  "version": "1.4",
+  "description": "Fetches hidden dates, detects non-US roles, scans for Visa/Clearance requirements, and provides E-Verify links. Supports Greenhouse, Ashby, Lever, Workday, BambooHR, SmartRecruiters, and Workable.",
   "content_scripts": [
     {
       "matches": [
         "https://boards.greenhouse.io/*/jobs/*",
         "https://job-boards.greenhouse.io/*/jobs/*",
         "https://jobs.ashbyhq.com/*",
-        "https://jobs.lever.co/*"
+        "https://jobs.lever.co/*",
+        "https://*.myworkdayjobs.com/*/job/*",
+        "https://*.myworkdayjobs.com/*/jobs/*",
+        "https://*.bamboohr.com/careers/*",
+        "https://*.bamboohr.com/jobs/*",
+        "https://jobs.smartrecruiters.com/*/*",
+        "https://apply.workable.com/*/j/*"
       ],
       "js": ["content.js"],
       "css": ["styles.css"]
